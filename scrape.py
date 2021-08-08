@@ -43,6 +43,6 @@ df = df.rename(columns={df.columns[0]: "血型"})
 with open("README.md", "w") as f:
     f.write("# 台灣血庫爬蟲\n\n")
     f.write(f"{update_time}\n\n")
-    f.write(df.to_markdown())
+    f.write(df.to_markdown(index=False))
 
 # cat README.md

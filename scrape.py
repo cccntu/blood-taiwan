@@ -39,6 +39,7 @@ for a in table.find_all("img", alt=True):
     a.replaceWith(x)
 df = pd.read_html(repr(table))[0]
 df = df.rename(columns={df.columns[0]: "血型"})
+df.to_csv('data.csv', index=False)
 
 with open("README.md", "w") as f:
     f.write("# 台灣血庫爬蟲\n\n")

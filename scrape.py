@@ -46,4 +46,7 @@ with open("README.md", "w") as f:
     f.write(f"{update_time}\n\n")
     f.write(df.to_markdown(index=False))
 
+with open("update_time.txt", "w") as f:
+    f.write(update_time)
+
 # cat README.md

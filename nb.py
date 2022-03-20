@@ -29,59 +29,12 @@ for commit in repo.iter_commits():
     print(commit.committed_datetime)
     print("\n")
 # %%
-print(len(list(repo.iter_commits())))
-
-# %%
 commits = list(repo.iter_commits())
-
-# %%
-commit = commits[100]
 
 # %%
 from rich import inspect
 
-# %%
-# %%
-inspect(commit)
-# %%
-inspect(commit.stats)
-
-# %%
-inspect(commit.tree.blobs)
-# %%
-tree = commit.tree
-# %%
-len(tree)
-
-# %%
-inspect(tree.trees[0])
-# %%
-tree.blobs
-# %%
-inspect(tree.blobs[1])
-# %%
-(list(tree.traverse()))
-
-# %%
-print(commit.tree.blobs[0].data_stream.read().decode("utf-8"))
-# %%
-from rich import print
-
-for blob in commit.tree.blobs:
-    print(blob.path)
-    print(blob.data_stream.read().decode("utf-8"))
-# %%
-
-# %%
-x.decode("utf-8")
-
-# %%
-for blob in commits[102].tree.traverse():
-    print(blob.path)
-# %%
-inspect(commit)
-
-# %%
+inspect(commits[0].stats)
 import pandas as pd
 
 # %%
@@ -103,11 +56,6 @@ for commit in repo.iter_commits():
 
 
 # %%
-df.to_dict(orient="records")
-
-# %%
-inspect(df.to_dict)
-# %%
 # schema: time, location, type, amount
 
 dfs = []
@@ -122,11 +70,12 @@ for dic in data:
 # %%
 adf = pd.concat(dfs)
 # %%
+# adf.to_csv("data.csv")
 x = df.set_index(df.columns[0])
 # %%
 df["region"].unique(), df["value"].unique(), df["type"].unique()
 # %%
-adf["num"] = adf["value"].map({"庫存量4到7日": 4, "庫存量7日以上": 7, "庫存量4日以下": 2})
+adf["num"] = adf["value"].map({"庫存量4到7日": 5, "庫存量7日以上": 7, "庫存量4日以下": 4})
 # %%
 from matplotlib import pyplot as plt
 
@@ -138,13 +87,53 @@ adf.query('region == "台北" and type == "A型"').plot(x="time", y="num", kind=
 # %%
 adf.query('region == "台北" and type == "A型"').plot(x="time", y="num", kind="scatter")
 # %%
-x.to_dict(orient="split")
+
+df = adf.query('region == "台北" and type == "A型"').reset_index(drop=True)
+# %%
+df["next"] = df["num"].shift(1).astype(int)
+df["prev"] = df["num"].shift(-1).astype(int)
+df["keep"] = df.apply(
+    lambda x: x["next"] != x["value"] or x["prev"] != x["value"], axis=1
+)
+# %%
+df[df["keep"] == True].plot(x="time", y="num")
+# %%
+def get_realval(x):
+    if (x["num"], x["next"]) == (5, 7):
+        return 6
+    if (x["num"], x["prev"]) == (5, 7):
+        return 6
+    return x["num"]
+
+
+df["newnum"] = df.apply(get_realval, axis=1)
+# %%
+df[df["keep"] == True].plot(x="time", y="newnum", kind="scatter")
+# %%
+def get_realval_df(df):
+    df["next"] = df["num"].shift(-1).fillna(0).astype(int)
+    df["prev"] = df["num"].shift(1).fillna(0).astype(int)
+    df["keep"] = df.apply(
+        lambda x: x["next"] != x["num"] or x["prev"] != x["num"], axis=1
+    )
+    df["newnum"] = df.apply(get_realval, axis=1)
+    df = df[df["keep"] == True].reset_index(drop=True)
+    return df
+
 
 # %%
-x
+adf2 = adf.groupby(["region", "type"]).apply(get_realval_df)
+# %%
+df2 = adf2.query('region == "台北" and type == "A型"').reset_index(drop=True)
+df2.plot(x="time", y="newnum", kind="scatter")
+df2.plot(x="time", y="newnum")
+df2
 
 # %%
-df.set_index("血型").stack().reset_index(name="Val").rename(columns={"level_1": "X"})
+adf
 # %%
-x
+adf2["num"] = adf2["newnum"]
+adf2[["type", "region", "value", "time", "num"]].reset_index(drop=True)
+# %%
+adf2.to_csv("aggdata.csv", index=False)
 # %%
